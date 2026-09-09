@@ -210,6 +210,7 @@ docker run -d \
   --tmpfs /tmp:rw,noexec,nosuid,size=512m \
   --security-opt=no-new-privileges:true \
   --security-opt seccomp=unconfined \
+  --security-opt apparmor=unconfined \
   --cap-add=SYS_ADMIN \
   ghcr.io/fs-wiwi-ms/restlatex:latest
 ```
@@ -227,6 +228,7 @@ docker run --rm \
   --tmpfs /tmp:rw,noexec,nosuid,size=512m \
   --security-opt=no-new-privileges:true \
   --security-opt seccomp=unconfined \
+  --security-opt apparmor=unconfined \
   --cap-add=SYS_ADMIN \
   restlatex:latest \
   pytest -v -o cache_dir=/tmp/.pytest_cache

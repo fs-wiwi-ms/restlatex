@@ -61,6 +61,7 @@ jobs:
             --tmpfs /tmp:rw,noexec,nosuid,size=512m \
             --security-opt=no-new-privileges:true \
             --security-opt seccomp=unconfined \
+            --security-opt apparmor=unconfined \
             --cap-add=SYS_ADMIN \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             pytest -v -o cache_dir=/tmp/.pytest_cache
