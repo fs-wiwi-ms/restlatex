@@ -70,7 +70,6 @@ def build_bwrap_command(
         "--unshare-pid",
         "--unshare-uts",
         "--die-with-parent",
-        "--proc", "/proc",
         "--dev", "/dev",
     ]
 
