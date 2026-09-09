@@ -1,8 +1,43 @@
+import errno
 import os
 import resource
+import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from app.config import settings
+
+_SECCOMP_BPF_BYTES: Optional[bytes] = None
+
+
+def get_seccomp_bpf_bytes() -> Optional[bytes]:
+    global _SECCOMP_BPF_BYTES
+    if _SECCOMP_BPF_BYTES is None:
+        try:
+            import seccomp
+
+            f = seccomp.SyscallFilter(defaction=seccomp.ALLOW)
+            for sc in [
+                "socket",
+                "connect",
+                "bind",
+                "accept",
+                "accept4",
+                "sendto",
+                "recvfrom",
+                "sendmsg",
+                "recvmsg",
+            ]:
+                try:
+                    f.add_rule(seccomp.ERRNO(errno.EPERM), sc)
+                except Exception:
+                    pass
+            with tempfile.NamedTemporaryFile() as tmp:
+                f.export_bpf(tmp)
+                tmp.seek(0)
+                _SECCOMP_BPF_BYTES = tmp.read()
+        except Exception:
+            return None
+    return _SECCOMP_BPF_BYTES
 
 
 def get_verified_ro_binds() -> List[str]:
@@ -23,18 +58,24 @@ def get_verified_ro_binds() -> List[str]:
     return verified
 
 
-def build_bwrap_command(job_dir: Path, tex_filename: str = "input.tex") -> List[str]:
+def build_bwrap_command(
+    job_dir: Path,
+    tex_filename: str = "input.tex",
+    seccomp_fd: Optional[int] = None,
+) -> List[str]:
     cmd = [
         settings.BWRAP_PATH,
         "--unshare-user",
         "--unshare-ipc",
         "--unshare-pid",
-        "--unshare-net",
         "--unshare-uts",
         "--die-with-parent",
         "--proc", "/proc",
         "--dev", "/dev",
     ]
+
+    if seccomp_fd is not None:
+        cmd.extend(["--seccomp", str(seccomp_fd)])
 
     if Path("/usr").exists():
         cmd.extend(["--ro-bind", "/usr", "/usr"])

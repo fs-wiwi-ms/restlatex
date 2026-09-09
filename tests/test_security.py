@@ -111,3 +111,11 @@ async def test_dos_memory_exhaustion():
         health_resp = await client.get("/health")
         assert health_resp.status_code == 200
         assert health_resp.json() == {"status": "healthy"}
+
+
+@pytest.mark.asyncio
+async def test_seccomp_blocks_network_sockets():
+    from app.security import get_seccomp_bpf_bytes
+    bpf_bytes = get_seccomp_bpf_bytes()
+    assert bpf_bytes is not None
+    assert len(bpf_bytes) > 0

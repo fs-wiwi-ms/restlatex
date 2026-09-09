@@ -12,6 +12,7 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         python3-venv \
+        python3-seccomp \
         procps \
         ca-certificates && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /usr/share/doc/* /usr/share/man/*
@@ -22,7 +23,7 @@ RUN mktexlsr 2>/dev/null || true
 RUN groupadd -g 10001 appuser && \
     useradd -u 10001 -g 10001 -m -s /bin/false appuser
 
-RUN python3 -m venv /opt/venv
+RUN python3 -m venv --system-site-packages /opt/venv
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
     rm -f /tmp/requirements.txt

@@ -16,8 +16,9 @@ RestLatex isolates untrusted LaTeX execution through a two-tier sandboxing archi
   - Volatile in-memory temporary storage (`tmpfs /tmp:rw,noexec,nosuid,size=512m`).
   - Privilege escalation prevented (`no-new-privileges:true`).
 
-- **Bubblewrap (bwrap) Process Sandboxing:**
-  - Full namespace isolation: `--unshare-user`, `--unshare-net` (no network access), `--unshare-pid`, `--unshare-ipc`, `--unshare-uts`.
+- **Bubblewrap (bwrap) & Seccomp Sandboxing:**
+  - Namespace isolation: `--unshare-user`, `--unshare-pid`, `--unshare-ipc`, `--unshare-uts`.
+  - **Kernel-level Network Blocking via Seccomp:** In-kernel BPF Seccomp filter blocks all network syscalls (`socket`, `connect`, `bind`, `accept`, `sendto`, etc.) with `EPERM`, completely cutting off network access without needing unprivileged network namespaces.
   - Minimal read-only mounts: Only `/usr` and necessary TeX system paths are mounted read-only.
   - Backend application directory (`/app`) and sensitive system files (`/etc/passwd`, `/root`) are completely excluded from the sandbox.
   - Only the request-specific ephemeral directory `/tmp/compile_<uuid>` is mounted read-write.
@@ -204,13 +205,14 @@ docker compose up -d
 ```bash
 docker run -d \
   --name restlatex \
-  -p 8000:8000 \
+  -p 127.0.0.1:8000:8000 \
   --user 10001:10001 \
   --read-only \
   --tmpfs /tmp:rw,noexec,nosuid,size=512m \
   --security-opt=no-new-privileges:true \
   --security-opt seccomp=unconfined \
   --security-opt apparmor=unconfined \
+  --cap-drop=ALL \
   --cap-add=SYS_ADMIN \
   ghcr.io/fs-wiwi-ms/restlatex:latest
 ```
@@ -229,6 +231,7 @@ docker run --rm \
   --security-opt=no-new-privileges:true \
   --security-opt seccomp=unconfined \
   --security-opt apparmor=unconfined \
+  --cap-drop=ALL \
   --cap-add=SYS_ADMIN \
   restlatex:latest \
   pytest -v -o cache_dir=/tmp/.pytest_cache

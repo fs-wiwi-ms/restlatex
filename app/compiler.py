@@ -6,7 +6,11 @@ import subprocess
 from pathlib import Path
 
 from app.config import settings
-from app.security import build_bwrap_command, set_child_resource_limits
+from app.security import (
+    build_bwrap_command,
+    set_child_resource_limits,
+    get_seccomp_bpf_bytes,
+)
 from app.parser import parse_tex_log
 
 
@@ -36,11 +40,21 @@ def compile_latex(tex_source: str, timeout_seconds: int = None) -> bytes:
     pdf_filename = "input.pdf"
     log_filename = "input.log"
 
+    bpf_file = None
     try:
         tex_path = job_dir / tex_filename
         tex_path.write_text(tex_source, encoding="utf-8")
 
-        bwrap_cmd = build_bwrap_command(job_dir, tex_filename)
+        bpf_bytes = get_seccomp_bpf_bytes()
+        bpf_fd = None
+        if bpf_bytes:
+            bpf_path = job_dir / "seccomp.bpf"
+            bpf_path.write_bytes(bpf_bytes)
+            bpf_file = open(bpf_path, "rb")
+            bpf_fd = bpf_file.fileno()
+
+        bwrap_cmd = build_bwrap_command(job_dir, tex_filename, seccomp_fd=bpf_fd)
+        pass_fds = (bpf_fd,) if bpf_fd is not None else ()
         proc = subprocess.Popen(
             bwrap_cmd,
             stdout=subprocess.PIPE,
@@ -48,6 +62,7 @@ def compile_latex(tex_source: str, timeout_seconds: int = None) -> bytes:
             text=True,
             start_new_session=True,
             preexec_fn=set_child_resource_limits,
+            pass_fds=pass_fds,
         )
 
         try:
@@ -83,4 +98,9 @@ def compile_latex(tex_source: str, timeout_seconds: int = None) -> bytes:
         return pdf_path.read_bytes()
 
     finally:
+        if bpf_file is not None:
+            try:
+                bpf_file.close()
+            except Exception:
+                pass
         shutil.rmtree(job_dir, ignore_errors=True)
