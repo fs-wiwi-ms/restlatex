@@ -53,6 +53,10 @@ jobs:
           cache-to: type=gha,mode=min
 
       # 2. Test
+      - name: Enable unprivileged user namespaces on runner
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Run test suite in hardened container
         run: |
           docker run --rm \
