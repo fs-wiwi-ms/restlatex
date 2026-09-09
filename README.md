@@ -2,6 +2,10 @@
 
 A stateless, hardened HTTP microservice to securely compile untrusted LaTeX documents into PDFs.
 
+## Overview
+
+RestLatex utilizes `latexmk` with `pdflatex` as its compilation engine, executing multiple passes automatically to resolve cross-references, citations, and page counters. The container comes with the complete **TeX Live Full** distribution (`texlive-full`) preinstalled, making the entire CTAN package collection (including `amsmath`, `tikz`, `circuitikz`, `listings`, `exam`, `lastpage`, and standard font/math packages) available out of the box without any runtime downloads.
+
 ## Security Architecture
 
 RestLatex isolates untrusted LaTeX execution through a two-tier sandboxing architecture:

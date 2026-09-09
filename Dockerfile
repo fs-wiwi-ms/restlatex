@@ -14,7 +14,7 @@ RUN apt-get update && \
         python3-venv \
         procps \
         ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* /usr/share/doc/* /usr/share/man/*
 
 COPY texmf.cnf /etc/texmf/web2c/texmf.cnf
 RUN mktexlsr 2>/dev/null || true
